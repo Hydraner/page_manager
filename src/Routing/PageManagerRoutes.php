@@ -16,6 +16,8 @@ use Symfony\Component\Routing\RouteCollection;
 
 /**
  * Provides routes for page entities.
+ *
+ * @see \Drupal\page_manager\Entity\PageViewBuilder
  */
 class PageManagerRoutes extends RouteSubscriberBase {
 
@@ -53,12 +55,14 @@ class PageManagerRoutes extends RouteSubscriberBase {
 
       // Prepare the values that need to be altered for an existing page.
       $path = $entity->getPath();
+
       $parameters = array(
         'page_manager_page' => array(
           'type' => 'entity:page',
         ),
       );
 
+      $altered_route = FALSE;
       // Loop through all existing routes to see if this is overriding a route.
       foreach ($collection->all() as $name => $collection_route) {
         // Find all paths which match the path of the current display.
@@ -72,6 +76,8 @@ class PageManagerRoutes extends RouteSubscriberBase {
           // Merge in any route parameter definitions.
           $parameters += $collection_route->getOption('parameters') ?: array();
 
+          $altered_route = TRUE;
+
           // Update the route name this will be added to.
           $route_name = $name;
           // Remove the existing route.
@@ -80,13 +86,28 @@ class PageManagerRoutes extends RouteSubscriberBase {
         }
       }
 
+      $arguments = [];
+      // Replace % with proper route slugs ("{arg_$i}").
+      if (!$altered_route) {
+        $bits = explode('/', $path);
+        $arg_counter = 0;
+        foreach ($bits as $pos => $bit) {
+          if ($bit == '%') {
+            $arg_id = 'arg_' . $arg_counter++;
+            $arguments[$arg_id] = NULL;
+            $bits[$pos] = '{' . $arg_id . '}';
+          }
+        }
+        $path = implode("/", $bits);
+      }
+
       // Construct an add a new route.
       $route = new Route(
         $path,
         array(
           '_entity_view' => 'page_manager_page',
           'page_manager_page' => $entity_id,
-        ),
+        ) + $arguments,
         array(
           '_entity_access' => 'page_manager_page.view',
         ),
