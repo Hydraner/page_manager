@@ -188,6 +188,7 @@ class PageManagerRoutesTest extends UnitTestCase {
     $expected_defaults = array(
       '_entity_view' => 'page_manager_page',
       'page_manager_page' => 'page1',
+      'arg_0' => NULL,
     );
     $expected_requirements = array(
       '_entity_access' => 'page_manager_page.view',
